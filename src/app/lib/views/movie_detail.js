@@ -15,6 +15,7 @@
             'click #watch-now': 'startStreaming',
             'click #watch-trailer': 'playTrailer',
             'click .close-icon': 'closeDetails',
+            'click #switch-4k-on': 'enable4K',
             'click #switch-hd-on': 'enableHD',
             'click #switch-hd-off': 'disableHD',
             'click .favourites-toggle': 'toggleFavourite',
@@ -55,8 +56,14 @@
             this.handleAnime();
 
             var torrents = this.model.get('torrents');
-            if (torrents['720p'] !== undefined && torrents['1080p'] !== undefined) {
-                this.model.set('quality', Settings.movies_default_quality);
+            if (torrents['720p'] !== undefined && torrents['1080p'] !== undefined && torrents['2160p'] !== undefined) {
+                if (Settings.movies_default_quality === '720p' || Settings.movies_default_quality === '1080p') {
+                    this.model.set('quality', '1080p');
+                } else {
+                    this.model.set('quality', '2160p');
+                }
+            } else if (torrents['2160p'] !== undefined) {
+                this.model.set('quality', '2160p');
             } else if (torrents['1080p'] !== undefined) {
                 this.model.set('quality', '1080p');
             } else if (torrents['720p'] !== undefined) {
@@ -68,6 +75,15 @@
             }
 
             if (Settings.movies_default_quality === '720p' && torrents['720p'] !== undefined && document.getElementsByName('switch')[0] !== undefined) {
+                document.getElementsByName('switch')[0].checked = true;
+                this.model.set('quality', '720p');
+            }
+
+            if (Settings.movies_default_quality === '720p' && torrents['2160p'] !== undefined && document.getElementsByName('switch')[0] !== undefined) {
+                document.getElementsByName('switch')[0].checked = false;
+            }
+
+            if (Settings.movies_default_quality === '1080p' && torrents['2160p'] !== undefined && document.getElementsByName('switch')[0] !== undefined) {
                 document.getElementsByName('switch')[0].checked = true;
             }
 
@@ -240,6 +256,17 @@
             App.vent.trigger('movie:closeDetail');
         },
 
+        enable4K: function () {
+            var torrents = this.model.get('torrents');
+
+            if (torrents['2160p'] !== undefined) {
+                torrents = this.model.get('torrents');
+                this.model.set('quality', '2160p');
+                win.debug('4K Enabled', this.model.get('quality'));
+                AdvSettings.set('movies_default_quality', '2160p');
+            }
+        },
+
         enableHD: function () {
             var torrents = this.model.get('torrents');
 
@@ -335,10 +362,14 @@
         },
 
         toggleQuality: function (e) {
-            if ($('#switch-hd-off').is(':checked')) {
-                $('#switch-hd-on').trigger('click');
+            if ($('#switch-hd-on').is(':checked')) {
+                $('#switch-4k-on').trigger('click');
             } else {
-                $('#switch-hd-off').trigger('click');
+                if ($('#switch-hd-off').is(':checked')) {
+                    $('#switch-hd-on').trigger('click');
+                } else {
+                    $('#switch-hd-off').trigger('click');
+                }
             }
             App.vent.trigger('qualitychange');
 
